@@ -11,8 +11,6 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import os
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-print("BOT TOKEN =", BOT_TOKEN)
-
 LTA_API_KEY = os.getenv("LTA_API_KEY")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
