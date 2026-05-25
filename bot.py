@@ -41,7 +41,7 @@ def get_lrt_info():
 # BUS
 # =========================
 def get_bus_lta():
-    url = "http://datamall2.mytransport.sg/ltaodataservice/BusArrivalv2"
+    url = "https://datamall2.mytransport.sg/ltaodataservice/v3/BusArrival"
     headers = {"AccountKey": LTA_API_KEY, "accept": "application/json"}
     params = {"BusStopCode": BUS_STOP_CODE}
     try:
