@@ -13,7 +13,8 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # e.g. https://your-app.onrender.com
 
 BUS_STOP_CODE = "44449"
-LRT_TRAVEL_TIME = 15
+LRT_WALK_TIME = 5
+LRT_STATION_CODE = "DT1"
 
 # =========================
 # UTIL
@@ -35,7 +36,34 @@ def get_lrt_info():
     status = "✔ Running"
     if now > last_train:
         status = "❌ Last train already passed"
-    return last_train, status, LRT_TRAVEL_TIME
+
+    # Fetch live train arrival
+    url = "https://datamall2.mytransport.sg/ltaodataservice/v3/TrainArrival"
+    headers = {"AccountKey": LTA_API_KEY, "accept": "application/json"}
+    params = {"StationCode": LRT_STATION_CODE}
+
+    try:
+        r = requests.get(url, headers=headers, params=params, timeout=5)
+        if r.status_code != 200:
+            print(f"LRT API ERROR: status={r.status_code}, body={r.text}")
+            return last_train, status, 12 + LRT_WALK_TIME  # fallback
+
+        data = r.json()
+        services = data.get("Services", [])
+
+        if services:
+            next_train = services[0].get("NextTrain", {})
+            arrival_iso = next_train.get("EstimatedArrival", "")
+            wait = iso_to_minutes(arrival_iso)
+
+            if wait is not None:
+                total = wait + LRT_WALK_TIME
+                return last_train, status, total
+
+    except Exception as e:
+        print("LRT API ERROR:", e)
+
+    return last_train, status, 12 + LRT_WALK_TIME  # fallback
 
 # =========================
 # BUS
@@ -104,22 +132,8 @@ def compare_routes():
     msg = []
     msg.append(f"🚆 LRT Last Train: {lrt_last}")
     msg.append(f"   Status: {lrt_status}")
-    msg.append(f"   Travel Time: {lrt_time} min")
-
-    if bus1 is not None:
-        msg.append(f"\n🚌 Bus 67 Next Wait: {bus1} min")
-        msg.append(f"   Total Time: {bus_total1} min")
-        if bus2 is not None:
-            msg.append(f"🚌 Bus 67 2nd Wait: {bus2} min")
-            msg.append(f"   Total Time (2nd): {bus_total2} min")
-        msg.append(f"   Source: {source}")
-    else:
-        msg.append("\n🚌 Bus 67: unavailable")
-
-    fastest = "🚆 LRT" if bus_total1 is None else ("🚆 LRT" if lrt_time < bus_total1 else "🚌 Bus 67")
-    msg.append(f"\n⚡ Fastest: {fastest}")
-
-    return "\n".join(msg)
+    msg.append(f"   Total Time (incl. walk): {lrt_time} min")
+    ...
 
 # =========================
 # TELEGRAM HANDLERS
