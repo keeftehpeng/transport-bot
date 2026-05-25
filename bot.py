@@ -10,11 +10,12 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 LTA_API_KEY = os.getenv("LTA_API_KEY")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # e.g. https://your-app.onrender.com
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
 BUS_STOP_CODE = "44449"
 LRT_WALK_TIME = 5
 LRT_STATION_CODE = "DT1"
+LRT_TRAVEL_TIME_FALLBACK = 12
 
 # =========================
 # UTIL
@@ -37,7 +38,6 @@ def get_lrt_info():
     if now > last_train:
         status = "❌ Last train already passed"
 
-    # Fetch live train arrival
     url = "https://datamall2.mytransport.sg/ltaodataservice/v3/TrainArrival"
     headers = {"AccountKey": LTA_API_KEY, "accept": "application/json"}
     params = {"StationCode": LRT_STATION_CODE}
@@ -46,7 +46,7 @@ def get_lrt_info():
         r = requests.get(url, headers=headers, params=params, timeout=5)
         if r.status_code != 200:
             print(f"LRT API ERROR: status={r.status_code}, body={r.text}")
-            return last_train, status, 12 + LRT_WALK_TIME  # fallback
+            return last_train, status, LRT_TRAVEL_TIME_FALLBACK + LRT_WALK_TIME
 
         data = r.json()
         services = data.get("Services", [])
@@ -63,7 +63,7 @@ def get_lrt_info():
     except Exception as e:
         print("LRT API ERROR:", e)
 
-    return last_train, status, 12 + LRT_WALK_TIME  # fallback
+    return last_train, status, LRT_TRAVEL_TIME_FALLBACK + LRT_WALK_TIME
 
 # =========================
 # BUS
@@ -75,7 +75,7 @@ def get_bus_lta():
     try:
         r = requests.get(url, headers=headers, params=params, timeout=5)
         if r.status_code != 200:
-            print(f"LTA ERROR: status={r.status_code}, body={r.text}")
+            print(f"LTA BUS ERROR: status={r.status_code}, body={r.text}")
             return None
         data = r.json()
         for s in data.get("Services", []):
@@ -84,7 +84,7 @@ def get_bus_lta():
                 b2 = iso_to_minutes(s["NextBus2"]["EstimatedArrival"])
                 return b1, b2
     except Exception as e:
-        print("LTA ERROR:", e)
+        print("LTA BUS ERROR:", e)
     return None
 
 def get_bus_google_travel_only():
@@ -148,8 +148,20 @@ def compare_routes():
     msg.append(f"\n⚡ Fastest: {fastest}")
 
     result = "\n".join(msg)
-    print(f"DEBUG result: '{result}'")   # add this line
+    print(f"DEBUG result: '{result}'")
     return result
+
+# =========================
+# TELEGRAM HANDLERS
+# =========================
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "👋 Transport Bot Ready!\nUse /compare to see fastest route."
+    )
+
+async def compare(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    result = compare_routes()
+    await update.message.reply_text(result)
 
 # =========================
 # RUN BOT (WEBHOOK)
