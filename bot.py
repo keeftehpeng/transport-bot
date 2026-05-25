@@ -136,7 +136,7 @@ async def compare(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # RUN BOT (WEBHOOK)
 # =========================
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8443))
+    port = int(os.getenv("PORT", 10000))
 
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
