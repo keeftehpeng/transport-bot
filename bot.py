@@ -49,6 +49,7 @@ def get_lrt_info():
             return last_train, status, LRT_TRAVEL_TIME_FALLBACK + LRT_WALK_TIME
 
         data = r.json()
+        print(f"LRT API RESPONSE: {data}")
         services = data.get("Services", [])
 
         if services:
