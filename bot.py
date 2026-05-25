@@ -13,7 +13,7 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # e.g. https://your-app.onrender.com
 
 BUS_STOP_CODE = "44449"
-LRT_TRAVEL_TIME = 18
+LRT_TRAVEL_TIME = 15
 
 # =========================
 # UTIL
