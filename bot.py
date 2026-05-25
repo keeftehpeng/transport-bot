@@ -14,6 +14,7 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
 BUS_STOP_CODE = "44449"
 LRT_WALK_TIME = 5
+LRT_WALK_TO_DEST = 3  
 
 # =========================
 # UTIL
@@ -32,18 +33,18 @@ def iso_to_minutes(iso_time):
 def get_lrt_travel_time():
     now = datetime.now()
     hour = now.hour
-    is_weekday = now.weekday() < 5  # Mon–Fri
+    is_weekday = now.weekday() < 5
 
     if is_weekday and (7 <= hour <= 9 or 17 <= hour <= 20):
-        wait = 5   # peak: both services running
+        wait = 5
     elif 6 <= hour <= 22:
-        wait = 8   # normal daytime/evening off-peak
+        wait = 8
     elif 23 <= hour or hour < 6:
-        wait = 12  # late night / early morning
+        wait = 12
     else:
-        wait = 8   # fallback
+        wait = 8
 
-    return wait + LRT_WALK_TIME
+    return wait + LRT_WALK_TO_PLATFORM + LRT_WALK_TO_DEST
 
 def get_lrt_info():
     last_train = "23:30"
