@@ -46,8 +46,9 @@ def get_bus_lta():
     params = {"BusStopCode": BUS_STOP_CODE}
     try:
         r = requests.get(url, headers=headers, params=params, timeout=5)
-        if r.status_code != 200:
-            return None
+if r.status_code != 200:
+    print(f"LTA ERROR: status={r.status_code}, body={r.text}")
+    return None
         data = r.json()
         for s in data.get("Services", []):
             if s["ServiceNo"] == "67":
