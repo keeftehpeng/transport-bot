@@ -13,8 +13,8 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
 BUS_STOP_CODE = "44449"
-LRT_WALK_TIME = 5
-LRT_WALK_TO_DEST = 3  
+LRT_WALK_TO_PLATFORM = 3
+LRT_WALK_TO_DEST = 5
 
 # =========================
 # UTIL
