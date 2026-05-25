@@ -14,8 +14,6 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
 BUS_STOP_CODE = "44449"
 LRT_WALK_TIME = 5
-LRT_STATION_CODE = "DT1"
-LRT_TRAVEL_TIME_FALLBACK = 12
 
 # =========================
 # UTIL
@@ -31,6 +29,22 @@ def iso_to_minutes(iso_time):
 # =========================
 # LRT
 # =========================
+def get_lrt_travel_time():
+    now = datetime.now()
+    hour = now.hour
+    is_weekday = now.weekday() < 5  # Mon–Fri
+
+    if is_weekday and (7 <= hour <= 9 or 17 <= hour <= 20):
+        wait = 5   # peak: both services running
+    elif 6 <= hour <= 22:
+        wait = 8   # normal daytime/evening off-peak
+    elif 23 <= hour or hour < 6:
+        wait = 12  # late night / early morning
+    else:
+        wait = 8   # fallback
+
+    return wait + LRT_WALK_TIME
+
 def get_lrt_info():
     last_train = "23:30"
     now = datetime.now().strftime("%H:%M")
@@ -38,33 +52,8 @@ def get_lrt_info():
     if now > last_train:
         status = "❌ Last train already passed"
 
-    url = "https://datamall2.mytransport.sg/ltaodataservice/v3/TrainArrival"
-    headers = {"AccountKey": LTA_API_KEY, "accept": "application/json"}
-    params = {"StationCode": LRT_STATION_CODE}
-
-    try:
-        r = requests.get(url, headers=headers, params=params, timeout=5)
-        if r.status_code != 200:
-            print(f"LRT API ERROR: status={r.status_code}, body={r.text}")
-            return last_train, status, LRT_TRAVEL_TIME_FALLBACK + LRT_WALK_TIME
-
-        data = r.json()
-        print(f"LRT API RESPONSE: {data}")
-        services = data.get("Services", [])
-
-        if services:
-            next_train = services[0].get("NextTrain", {})
-            arrival_iso = next_train.get("EstimatedArrival", "")
-            wait = iso_to_minutes(arrival_iso)
-
-            if wait is not None:
-                total = wait + LRT_WALK_TIME
-                return last_train, status, total
-
-    except Exception as e:
-        print("LRT API ERROR:", e)
-
-    return last_train, status, LRT_TRAVEL_TIME_FALLBACK + LRT_WALK_TIME
+    total_time = get_lrt_travel_time()
+    return last_train, status, total_time
 
 # =========================
 # BUS
@@ -133,7 +122,7 @@ def compare_routes():
     msg = []
     msg.append(f"🚆 LRT Last Train: {lrt_last}")
     msg.append(f"   Status: {lrt_status}")
-    msg.append(f"   Total Time (incl. walk): {lrt_time} min")
+    msg.append(f"   Est. Total Time: {lrt_time} min (incl. walk)")
 
     if bus1 is not None:
         msg.append(f"\n🚌 Bus 67 Next Wait: {bus1} min")
@@ -148,9 +137,7 @@ def compare_routes():
     fastest = "🚆 LRT" if bus_total1 is None else ("🚆 LRT" if lrt_time < bus_total1 else "🚌 Bus 67")
     msg.append(f"\n⚡ Fastest: {fastest}")
 
-    result = "\n".join(msg)
-    print(f"DEBUG result: '{result}'")
-    return result
+    return "\n".join(msg)
 
 # =========================
 # TELEGRAM HANDLERS
