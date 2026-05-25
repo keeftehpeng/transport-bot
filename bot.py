@@ -133,19 +133,23 @@ def compare_routes():
     msg.append(f"🚆 LRT Last Train: {lrt_last}")
     msg.append(f"   Status: {lrt_status}")
     msg.append(f"   Total Time (incl. walk): {lrt_time} min")
-    ...
 
-# =========================
-# TELEGRAM HANDLERS
-# =========================
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "👋 Transport Bot Ready!\nUse /compare to see fastest route."
-    )
+    if bus1 is not None:
+        msg.append(f"\n🚌 Bus 67 Next Wait: {bus1} min")
+        msg.append(f"   Total Time: {bus_total1} min")
+        if bus2 is not None:
+            msg.append(f"🚌 Bus 67 2nd Wait: {bus2} min")
+            msg.append(f"   Total Time (2nd): {bus_total2} min")
+        msg.append(f"   Source: {source}")
+    else:
+        msg.append("\n🚌 Bus 67: unavailable")
 
-async def compare(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    result = compare_routes()
-    await update.message.reply_text(result)
+    fastest = "🚆 LRT" if bus_total1 is None else ("🚆 LRT" if lrt_time < bus_total1 else "🚌 Bus 67")
+    msg.append(f"\n⚡ Fastest: {fastest}")
+
+    result = "\n".join(msg)
+    print(f"DEBUG result: '{result}'")   # add this line
+    return result
 
 # =========================
 # RUN BOT (WEBHOOK)
